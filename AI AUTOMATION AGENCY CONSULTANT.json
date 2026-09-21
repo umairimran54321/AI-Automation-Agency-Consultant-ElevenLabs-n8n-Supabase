@@ -1,0 +1,1865 @@
+{
+  "name": "AI AUTOMATION AGENCY CONSULTANT",
+  "nodes": [
+    {
+      "parameters": {
+        "sendTo": "ranahamza75311@gmail.com",
+        "subject": "=Quotation for {{ $('Route Action2').item.json.company_name }}",
+        "message": "=Hi Dear Manager,\n\nPlease find attached the quotation for {{ $('Route Action2').item.json.company_name }}\nfor \n{{ $('Route Action2').item.json.desired_automation }}{{ $('Route Action2').item.json.expected_outcome }}\n\n\nThis is a draft - please review before sending to the customer. Quotation id: {{ $('Route Action2').item.json.quote_id }}",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {}
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        8656,
+        6496
+      ],
+      "id": "eb5770d3-5155-47fc-a827-cdae67db1f53",
+      "name": "Attach PDF to Gmail Draft",
+      "webhookId": "42fd3010-6098-4b4f-b9c1-75193f6d5673",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "BFl45hgQrRgsWosb",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "c67e8a5d-8209-4011-a6e5-0cf928ca1601",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        4144,
+        6672
+      ],
+      "id": "90e8b5c1-7cbf-4c6c-b696-586bf55c721e",
+      "name": "Webhook2",
+      "webhookId": "c67e8a5d-8209-4011-a6e5-0cf928ca1601"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ==========================================\n// N8N AI AGENT → COMPLETE STRING NORMALIZER\n// + CUSTOMER ID GENERATOR\n// + CUSTOMER DATE/STATUS GENERATOR\n// ==========================================\n\n// ==========================================\n// 1. GET AI AGENT OUTPUT\n// ==========================================\n\nlet input = $json;\n\n// ==========================================\n// 2. UNWRAP COMMON AI AGENT WRAPPERS\n// ==========================================\n\nif (input.output !== undefined && input.output !== null) {\n  input = input.output;\n}\nelse if (input.text !== undefined && input.text !== null) {\n  input = input.text;\n}\nelse if (input.response !== undefined && input.response !== null) {\n  input = input.response;\n}\nelse if (input.result !== undefined && input.result !== null) {\n  input = input.result;\n}\n\n// ==========================================\n// 3. PARSE JSON IF STRING\n// ==========================================\n\nfunction parseJSON(value) {\n\n  if (typeof value !== 'string') {\n    return value;\n  }\n\n  try {\n    return JSON.parse(value);\n  }\n  catch (error) {\n    return {\n      message: value\n    };\n  }\n}\n\ninput = parseJSON(input);\n\n// ==========================================\n// 4. MAKE SURE INPUT IS AN OBJECT\n// ==========================================\n\nif (\n  !input ||\n  typeof input !== 'object' ||\n  Array.isArray(input)\n) {\n  input = {\n    message: String(input || '')\n  };\n}\n\n// ==========================================\n// 5. GET DATA OBJECT\n// ==========================================\n\nlet data = input.data;\n\nif (typeof data === 'string') {\n  data = parseJSON(data);\n}\n\nif (\n  !data ||\n  typeof data !== 'object' ||\n  Array.isArray(data)\n) {\n  data = {};\n}\n\n// ==========================================\n// 6. COMBINE TOP LEVEL + DATA\n// ==========================================\n\nconst combined = {\n  ...input,\n  ...data\n};\n\n// ==========================================\n// 7. STRING CONVERTER\n// ==========================================\n\nfunction toStringValue(value) {\n\n  if (\n    value === undefined ||\n    value === null\n  ) {\n    return '';\n  }\n\n  if (Array.isArray(value)) {\n\n    return value\n      .map(function(item) {\n\n        if (\n          item !== null &&\n          typeof item === 'object'\n        ) {\n          return JSON.stringify(item);\n        }\n\n        return String(item || '');\n\n      })\n      .join(', ');\n  }\n\n  if (typeof value === 'object') {\n    return JSON.stringify(value);\n  }\n\n  return String(value);\n}\n\n// ==========================================\n// 8. GET FIELD\n// ==========================================\n\nfunction getField(name, fallback) {\n\n  if (fallback === undefined) {\n    fallback = '';\n  }\n\n  if (\n    combined[name] !== undefined &&\n    combined[name] !== null\n  ) {\n    return toStringValue(combined[name]);\n  }\n\n  return fallback;\n}\n\n// ==========================================\n// 9. GET ACTION\n// ==========================================\n\nconst action = getField('action');\n\n// ==========================================\n// 10. CUSTOMER ID\n// ==========================================\n\nlet customerId = getField('customer_id');\n\nif (\n  action === 'create_customer' &&\n  customerId === ''\n) {\n\n  var randomNumber = Math.floor(\n    100000 + Math.random() * 900000\n  );\n\n  customerId = 'CUST-' + randomNumber;\n}\n\n// ==========================================\n// 11. CUSTOMER STATUS\n// ==========================================\n\nlet status = getField('status');\n\n// ==========================================\n// 12. CREATED AT\n// ==========================================\n\nlet createdAt = getField('created_at');\n\n// ==========================================\n// 13. LAST CONTACT\n// ==========================================\n\nlet lastContact = getField('last_contact');\n\n// ==========================================\n// 14. AUTO-GENERATE CUSTOMER INFORMATION\n// ==========================================\n\nif (action === 'create_customer') {\n\n  // Default status\n  if (status === '') {\n    status = 'Active';\n  }\n\n  // Creation timestamp\n  if (createdAt === '') {\n    createdAt = new Date().toISOString();\n  }\n\n  // Last contact timestamp\n  if (lastContact === '') {\n    lastContact = new Date().toISOString();\n  }\n}\n\n// ==========================================\n// 15. FINAL OUTPUT\n// ==========================================\n\nreturn [\n  {\n    json: {\n\n      // RESPONSE\n      success: getField('success'),\n      action: action,\n      message: getField('message'),\n      error: getField('error'),\n\n      // CUSTOMER\n      customer_id: customerId,\n      name: getField('name'),\n      company_name: getField('company_name'),\n      email: getField('email'),\n      phone: getField('phone'),\n      industry: getField('industry'),\n      company_size: getField('company_size'),\n      website: getField('website'),\n      location: getField('location'),\n      existing_tools: getField('existing_tools'),\n      budget_range: getField('budget_range'),\n\n      // AUTO-GENERATED CUSTOMER FIELDS\n      status: status,\n      created_at: createdAt,\n      last_contact: lastContact,\n\n      // AUTOMATION REQUEST\n      service_name: getField('service_name'),\n      department: getField('department'),\n      quantity: getField('quantity', '1'),\n      request_location: getField('request_location'),\n      urgency: getField('urgency'),\n      issue: getField('issue'),\n      notes: getField('notes'),\n      desired_automation: getField('desired_automation'),\n      expected_outcome: getField('expected_outcome'),\n\n      // APPOINTMENT\n      appointment_id: getField('appointment_id'),\n      selected_date: getField('selected_date'),\n      selected_time: getField('selected_time'),\n      start_time: getField('start_time'),\n      end_time: getField('end_time'),\n      availability_id: getField('availability_id'),\n      technician_id: getField('technician_id'),\n      technician_name: getField('technician_name'),\n\n      // COMPONENTS\n      selected_components: getField('selected_components'),\n\n      // QUOTATION\n      quote_id: getField('quote_id'),\n\n      // POLICY\n      policy_type: getField('policy_type'),\n\n      // ORIGINAL DATA\n      data: toStringValue(input.data)\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4864,
+        6688
+      ],
+      "id": "fa3540ec-9f6b-41c5-a2eb-89df9e9f8261",
+      "name": "Code in JavaScript6"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1bbe75ee-8df0-4687-ad8a-67d85178474f",
+              "leftValue": "={{ $json.created_at }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        5504,
+        6704
+      ],
+      "id": "a027472b-8793-4fb2-b9cf-5f36f1847a72",
+      "name": "If4"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "Customers",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "company_name",
+              "keyValue": "={{ $json.company_name }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        5328,
+        6688
+      ],
+      "id": "74813d8d-056b-4748-89ee-1419904676ff",
+      "name": "Get a row2",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "BK3lrdMFNvplh41P",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "Customers",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "id",
+              "fieldValue": "={{ $('Code in JavaScript6').item.json.customer_id }}"
+            },
+            {
+              "fieldId": "name",
+              "fieldValue": "={{ $('Code in JavaScript6').item.json.name }}"
+            },
+            {
+              "fieldId": "company_name",
+              "fieldValue": "={{ $('Code in JavaScript6').item.json.company_name }}"
+            },
+            {
+              "fieldId": "email",
+              "fieldValue": "={{ $('Code in JavaScript6').item.json.email }}"
+            },
+            {
+              "fieldId": "phone",
+              "fieldValue": "={{ $('Code in JavaScript6').item.json.phone }}"
+            },
+            {
+              "fieldId": "industry",
+              "fieldValue": "={{ $('Code in JavaScript6').item.json.industry }}"
+            },
+            {
+              "fieldId": "company_size",
+              "fieldValue": "={{ $('Code in JavaScript6').item.json.company_size }}"
+            },
+            {
+              "fieldId": "website",
+              "fieldValue": "={{ $('Code in JavaScript6').item.json.website }}"
+            },
+            {
+              "fieldId": "location",
+              "fieldValue": "={{ $('Code in JavaScript6').item.json.location }}"
+            },
+            {
+              "fieldId": "existing_tools",
+              "fieldValue": "={{ $('Code in JavaScript6').item.json.existing_tools }}"
+            },
+            {
+              "fieldId": "budget_range",
+              "fieldValue": "={{ $('Code in JavaScript6').item.json.budget_range }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "={{ $('Code in JavaScript6').item.json.status }}"
+            },
+            {
+              "fieldId": "created_at",
+              "fieldValue": "={{ $('Code in JavaScript6').item.json.created_at }}"
+            },
+            {
+              "fieldId": "last_contact_at",
+              "fieldValue": "={{ $('Code in JavaScript6').item.json.last_contact }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        5920,
+        6992
+      ],
+      "id": "b91a24dc-c08d-490d-a347-bb4e51d826a9",
+      "name": "Create a row2",
+      "credentials": {
+        "supabaseApi": {
+          "id": "BK3lrdMFNvplh41P",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "e010133f-d405-4ff4-b5d9-739c52f481b6",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "reschedule_appointment",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "reschedule"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "cond-calculate_quote",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "calculate_quote",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "calculate_quote"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "8730602d-140c-45e0-ae1f-21af1a09827e",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "book_appointment",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "book_appointment"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        7248,
+        6512
+      ],
+      "id": "1a042cb6-e21a-46a5-b795-54f4f314f1c4",
+      "name": "Route Action2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const previousData = $('Code in JavaScript6').first().json;\nconst currentData = $json;\n\nreturn [\n  {\n    json: {\n      previous_data: previousData,\n      current_data: currentData,\n\n      // Also provide one combined output\n      ...previousData,\n      ...currentData\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        7008,
+        6560
+      ],
+      "id": "2abc36cd-eaf5-41a4-a88d-8c32cf75c519",
+      "name": "Code in JavaScript7"
+    },
+    {
+      "parameters": {
+        "enableResponseOutput": true,
+        "respondWith": "text",
+        "responseBody": "={\n  \"message\": \"Customer has been created successfully with customer ID {{ $json.id }}, name {{ $json.name }}, and company name {{ $json.company_name }}.\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        6160,
+        6976
+      ],
+      "id": "87612e4f-1b39-48f8-af09-4ca0834eb595",
+      "name": "Respond to Webhook7"
+    },
+    {
+      "parameters": {
+        "driveId": "=myDrive",
+        "folderId": "1WeMEWrFdXFHhU_J0L7VI9zf1NxOiLKp_",
+        "title": "= Quottation for  {{ $json.company_name }}"
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        8080,
+        6496
+      ],
+      "id": "03d1d3f9-e334-455e-ab64-94536e2d0d44",
+      "name": "Create a document2",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "ptOvWJkPz1Q06Q8v",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentURL": "={{ $json.id }}",
+        "actionsUi": {
+          "actionFields": [
+            {
+              "action": "insert",
+              "text": "={{ $('Route Action2').item.json.message }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        8256,
+        6496
+      ],
+      "id": "e65d8bf2-402a-4d48-8fc8-ac0f95953f1e",
+      "name": "Update a document2",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "ptOvWJkPz1Q06Q8v",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.documentId }}",
+          "mode": "id"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "application/pdf"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        8448,
+        6496
+      ],
+      "id": "a9fb79c8-53dd-44a9-9d17-444d7cab9074",
+      "name": "Export Document as PDF1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "KAUsoOAhop9IDXyt",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "enableResponseOutput": true,
+        "respondWith": "text",
+        "responseBody": "={\n  \"message\": \"Your quotation will be generated and, after being carefully reviewed by our team, will be delivered to you shortly. Your customer ID is {{ $('Route Action2').item.json.customer_id }}, with name {{ $('Route Action2').item.json.name }}, for company name {{ $('Route Action2').item.json.company_name }}, for {{ $('Route Action2').item.json.service_name }} {{ $('Route Action2').item.json.selected_components }}.\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        8848,
+        6496
+      ],
+      "id": "8d67f4e1-4e14-4b44-8f48-4ec801c4ceb1",
+      "name": "Respond to Webhook9"
+    },
+    {
+      "parameters": {
+        "tableId": "conversations",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "customer_id",
+              "fieldValue": "={{ $('Route Action2').item.json.customer_id }}"
+            },
+            {
+              "fieldId": "conversation_id",
+              "fieldValue": "={{ $json.conversation_id }}"
+            },
+            {
+              "fieldId": "intent",
+              "fieldValue": "={{ $('Route Action2').item.json.service_name }}"
+            },
+            {
+              "fieldId": "summary",
+              "fieldValue": "={{ $('Route Action2').item.json.issue }}"
+            },
+            {
+              "fieldId": "transcript",
+              "fieldValue": "={{ $('Route Action2').item.json.desired_automation }}"
+            },
+            {
+              "fieldId": "key_requirements",
+              "fieldValue": "={{ $('Route Action2').item.json.selected_components }}"
+            },
+            {
+              "fieldId": "outcome",
+              "fieldValue": "={{ $('Route Action2').item.json.expected_outcome }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        9968,
+        6656
+      ],
+      "id": "2ec95dfd-8795-44d8-92a4-2d9b5706cd74",
+      "name": "Create a row3",
+      "credentials": {
+        "supabaseApi": {
+          "id": "BK3lrdMFNvplh41P",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const conversation_id =\n  Math.floor(100000 + Math.random() * 900000).toString();\n\nconst project_id =\n  Math.floor(100000 + Math.random() * 900000).toString();\n\nreturn [\n  {\n    json: {\n      conversation_id,\n      project_id\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        9680,
+        6688
+      ],
+      "id": "17f629b9-78b8-4f28-a25d-7f048271ef76",
+      "name": "Code in JavaScript9"
+    },
+    {
+      "parameters": {
+        "tableId": "projects",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "customer_id",
+              "fieldValue": "={{ $('Route Action2').item.json.customer_id }}"
+            },
+            {
+              "fieldId": "project_code",
+              "fieldValue": "={{ $('Code in JavaScript9').item.json.project_id }}"
+            },
+            {
+              "fieldId": "project_name",
+              "fieldValue": "=Project for {{ $('Route Action2').item.json.company_name }} "
+            },
+            {
+              "fieldId": "department",
+              "fieldValue": "={{ $('Route Action2').item.json.department }}"
+            },
+            {
+              "fieldId": "business_problem",
+              "fieldValue": "={{ $('Route Action2').item.json.issue }}"
+            },
+            {
+              "fieldId": "current_process",
+              "fieldValue": "={{ $('Route Action2').item.json.existing_tools }}"
+            },
+            {
+              "fieldId": "desired_automation",
+              "fieldValue": "={{ $('Route Action2').item.json.desired_automation }}"
+            },
+            {
+              "fieldId": "complexity",
+              "fieldValue": "Normal"
+            },
+            {
+              "fieldId": "estimated_budget",
+              "fieldValue": "={{ $('Route Action2').item.json.budget_range }}"
+            },
+            {
+              "fieldId": "urgency",
+              "fieldValue": "={{ $('Route Action2').item.json.urgency }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "={{ $('Route Action2').item.json.status }}"
+            },
+            {
+              "fieldId": "created_at",
+              "fieldValue": "={{ $('Route Action2').item.json.created_at }}"
+            },
+            {
+              "fieldId": "Quotation id",
+              "fieldValue": "={{ $('Route Action2').item.json.quote_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        10192,
+        6608
+      ],
+      "id": "4882ddb9-217c-403a-b244-c960aa66e6b9",
+      "name": "Create a row4",
+      "credentials": {
+        "supabaseApi": {
+          "id": "BK3lrdMFNvplh41P",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get data directly from the current input\nconst previousData = $input.first().json;\n\nconst appointment_id =\n  'APT' + Math.floor(100000 + Math.random() * 900000).toString();\n\n// Expected:\n// selected_date = \"2026-09-20\"\n// start_time = \"14:00\"\n// end_time = \"15:00\"\n\nconst selectedDate =\n  String(previousData.selected_date || '').trim();\n\nconst startTimeRaw =\n  String(\n    previousData.start_time ||\n    previousData.selected_time ||\n    ''\n  ).trim();\n\nconst endTimeRaw =\n  String(previousData.end_time || '').trim();\n\nconst UTC_OFFSET = '+03:00';\n\nfunction padTime(t) {\n  if (!t) return null;\n\n  const parts = t.split(':');\n\n  const hh = (parts[0] || '00').padStart(2, '0');\n  const mm = (parts[1] || '00').padStart(2, '0');\n  const ss = (parts[2] || '00').padStart(2, '0');\n\n  return `${hh}:${mm}:${ss}`;\n}\n\nfunction toIsoWithOffset(dateStr, timeStr) {\n  if (!dateStr || !timeStr) return null;\n\n  const t = padTime(timeStr);\n\n  if (!t) return null;\n\n  return `${dateStr}T${t}${UTC_OFFSET}`;\n}\n\nconst time_min =\n  toIsoWithOffset(selectedDate, startTimeRaw);\n\nconst time_max =\n  toIsoWithOffset(selectedDate, endTimeRaw);\n\nreturn [\n  {\n    json: {\n      ...previousData,\n\n      appointment_id,\n      time_min,\n      time_max,\n\n      selected_date: selectedDate,\n      start_time: startTimeRaw,\n      end_time: endTimeRaw,\n\n      missing_time_fields:\n        String(!time_min || !time_max)\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        7408,
+        7008
+      ],
+      "id": "bde2e85a-2429-458b-aa73-3a6cdf6917e3",
+      "name": "Code in JavaScript10"
+    },
+    {
+      "parameters": {
+        "resource": "calendar",
+        "calendar": {
+          "__rl": true,
+          "value": "umairimran54321@gmail.com",
+          "mode": "list",
+          "cachedResultName": "umairimran54321@gmail.com"
+        },
+        "timeMin": "={{ $json.time_min }}",
+        "timeMax": "={{ $json.time_max }}",
+        "options": {
+          "timezone": "Asia/Riyadh"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        7664,
+        7008
+      ],
+      "id": "95ffe619-7c48-4d09-a34e-5f87c09871d5",
+      "name": "Get availability in a calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "M8xlyAVAeE5TMBGM",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cond-slot-available",
+              "leftValue": "={{ $json.available }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        7920,
+        7008
+      ],
+      "id": "e383083f-9ef6-4e08-93e4-33188ddcae92",
+      "name": "Is Slot Available?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const booking = $('Code in JavaScript10').first().json;\nconst event = $json;\n\nreturn [{\n  json: {\n    success: true,\n    action: 'book_appointment',\n    message: 'Appointment booked successfully.',\n    data: {\n      appointment_id: booking.appointment_id,\n      company_name: booking.company_name,\n      service_name: booking.service_name,\n      start_time: booking.time_min,\n      end_time: booking.time_max,\n      calendar_event_id: event.id || null,\n      calendar_event_link: event.htmlLink || null\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        8784,
+        6912
+      ],
+      "id": "c6c88a28-4865-409d-8a16-37be3ca1a428",
+      "name": "Format Booking Confirmed Response"
+    },
+    {
+      "parameters": {
+        "jsCode": "const booking = $('Code in JavaScript10').first().json;\n\nreturn [{\n  json: {\n    success: false,\n    action: 'book_appointment',\n    error: 'slot_unavailable',\n    message: 'The requested time slot is no longer available. Please choose another time.',\n    data: {\n      requested_start: booking.time_min,\n      requested_end: booking.time_max\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        8176,
+        7136
+      ],
+      "id": "bb2f418e-15e7-4d87-aaf4-f92c5fc05912",
+      "name": "Format Slot Unavailable Response"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={\n  \"message\": \"Your appointment with our specialist has been booked successfully. Your appointment ID is {{ $json.data.appointment_id }} and your customer ID is {{ $('Route Action2').item.json.previous_data.customer_id }}. The appointment is for {{ $('Route Action2').item.json.previous_data.desired_automation }} on {{ $('Route Action2').item.json.previous_data.selected_date }} from {{ $('Route Action2').item.json.previous_data.start_time }} till {{ $('Route Action2').item.json.previous_data.end_time }}. Calendar ID: {{ $('Create an event').item.json.id }}.\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        9088,
+        6960
+      ],
+      "id": "43c577b5-29f9-4f32-a995-093d20677be3",
+      "name": "Respond to Webhook - Booking",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "umairimran54321@gmail.com",
+          "mode": "list",
+          "cachedResultName": "umairimran54321@gmail.com"
+        },
+        "start": "={{ $json.time_min }}",
+        "end": "={{ $json.time_max }}",
+        "additionalFields": {
+          "description": "=Appointment for  {{ $json.company_name }} for service {{ $json.service_name }}",
+          "summary": "=Dear Manager your appointment with  {{ $json.name }} of company {{ $json.company_name }}  for service {{ $json.service_name }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        8512,
+        6912
+      ],
+      "id": "556cf61c-6971-4b70-b46d-9b5f7e4a8522",
+      "name": "Create an event",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "M8xlyAVAeE5TMBGM",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst previousData = $('Code in JavaScript10').first().json;\n\nconst appointment_id = 'APT' + Math.floor(100000 + Math.random() * 900000).toString();\n\n// Expect selected_date like \"2026-09-20\", and start_time / end_time like \"14:00\"\nconst selectedDate = (previousData.selected_date || '').toString().trim();\nconst startTimeRaw = (previousData.start_time || previousData.selected_time || '').toString().trim();\nconst endTimeRaw = (previousData.end_time || '').toString().trim();\n\nconst UTC_OFFSET = '+03:00';\n\nfunction padTime(t) {\n  if (!t) return null;\n  // Accept \"14:00\" or \"14:00:00\"\n  const parts = t.split(':');\n  const hh = (parts[0] || '00').padStart(2, '0');\n  const mm = (parts[1] || '00').padStart(2, '0');\n  const ss = (parts[2] || '00').padStart(2, '0');\n  return `${hh}:${mm}:${ss}`;\n}\n\nfunction toIsoWithOffset(dateStr, timeStr) {\n  if (!dateStr || !timeStr) return null;\n  const t = padTime(timeStr);\n  if (!t) return null;\n  // Full RFC3339 datetime with explicit UTC offset - this is the format\n  // Google Calendar's API expects; a bare local-time string without an\n  // offset is what was causing the \"can't process the mentioned value\" error.\n  return `${dateStr}T${t}${UTC_OFFSET}`;\n}\n\nconst time_min = toIsoWithOffset(selectedDate, startTimeRaw);\nconst time_max = toIsoWithOffset(selectedDate, endTimeRaw);\n\nreturn [\n  {\n    json: {\n      appointment_id,\n      time_min,\n      time_max,\n      selected_date: selectedDate,\n      start_time: startTimeRaw,\n      end_time: endTimeRaw,\n      customer_id: previousData.customer_id,\n      name: previousData.name,\n      company_name: previousData.company_name,\n      email: previousData.email,\n      service_name: previousData.service_name,\n      notes: previousData.notes,\n      missing_time_fields: !time_min || !time_max\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        8272,
+        6928
+      ],
+      "id": "57404d82-2764-4f53-9491-103bb6cbfc7e",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={\n  \"message\": \"Dear customer, {{ $json.message }}. If you like, I can tell you about some other available date and time slots.\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        8896,
+        7216
+      ],
+      "id": "b6975138-26ff-45af-b04c-e3741f5cb274",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "sendTo": "ranahamza75311@gmail.com",
+        "subject": "New Appointment Boooked ",
+        "emailType": "text",
+        "message": "=Dear Manager your appointment with Mr/Mrs {{ $('Route Action2').item.json.name }}  from company {{ $('Route Action2').item.json.company_name }} for {{ $('Route Action2').item.json.service_name }} on {{ $('Route Action2').item.json.start_time }} to {{ $('Route Action2').item.json.end_time }} at {{ $('Route Action2').item.json.selected_date }} and calender id {{ $json.data.calendar_event_id }} has been booked sucessfully Calendar Link: {{ $json.data.calendar_event_link }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        9440,
+        6960
+      ],
+      "id": "e2a6dfd4-8a24-4953-b70b-e5c23ef6915a",
+      "name": "Send a message",
+      "webhookId": "ae28a28d-1459-4b73-8f1e-e4794198f216",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "BFl45hgQrRgsWosb",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "appointments",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "appointment_code",
+              "fieldValue": "={{ $('Code in JavaScript').item.json.appointment_id }}"
+            },
+            {
+              "fieldId": "customer_id",
+              "fieldValue": "={{ $('Route Action2').item.json.customer_id }}"
+            },
+            {
+              "fieldId": "project_id",
+              "fieldValue": "={{ $('Code in JavaScript9').item.json.project_id }}"
+            },
+            {
+              "fieldId": "date",
+              "fieldValue": "={{ $('Code in JavaScript').item.json.selected_date }}"
+            },
+            {
+              "fieldId": "start_time",
+              "fieldValue": "={{ $('Code in JavaScript10').item.json.start_time }}"
+            },
+            {
+              "fieldId": "end_time",
+              "fieldValue": "={{ $('Code in JavaScript10').item.json.end_time }}"
+            },
+            {
+              "fieldId": "meeting_type",
+              "fieldValue": "Google Meet"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "Confirmed"
+            },
+            {
+              "fieldId": "notes",
+              "fieldValue": "={{ $('Route Action2').item.json.expected_outcome }}"
+            },
+            {
+              "fieldId": "Calendar_id",
+              "fieldValue": "={{ $('Create an event').item.json.id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        10160,
+        6976
+      ],
+      "id": "ea59c366-ff18-4e5a-a433-908064e958b2",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "BK3lrdMFNvplh41P",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5f6830de-8b08-4ec7-a1b9-0ba21d0b5c6b",
+              "leftValue": "={{ $json.selected_time }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        7440,
+        6160
+      ],
+      "id": "4d0b261d-257c-43b6-8c5b-8d058de134ad",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "calendar": {
+          "__rl": true,
+          "value": "umairimran54321@gmail.com",
+          "mode": "list",
+          "cachedResultName": "umairimran54321@gmail.com"
+        },
+        "eventId": "={{ $('Get many rows').item.json.Calendar_id }}",
+        "updateFields": {
+          "end": "={{ $json.time_max }}",
+          "start": "={{ $json.time_min }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        8288,
+        6064
+      ],
+      "id": "ce5250dc-283f-49bf-822d-ce8b14bc9119",
+      "name": "Update an event",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "M8xlyAVAeE5TMBGM",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "appointments",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "appointment_code",
+              "condition": "eq",
+              "keyValue": "={{ $json.appointment_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        7712,
+        6064
+      ],
+      "id": "3f7e18ae-39a5-4343-91ba-2776b194a1ca",
+      "name": "Get many rows",
+      "credentials": {
+        "supabaseApi": {
+          "id": "BK3lrdMFNvplh41P",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const previousData = $input.first().json;\n\nconst appointment_id = previousData.appointment_code || '';\n\n// Your input uses \"date\"\nconst selectedDate = (previousData.date || '').toString().trim();\n\nconst startTimeRaw = (previousData.start_time || '').toString().trim();\nconst endTimeRaw = (previousData.end_time || '').toString().trim();\n\nconst UTC_OFFSET = '+03:00';\n\nfunction padTime(t) {\n  if (!t) return null;\n\n  const parts = t.split(':');\n  const hh = (parts[0] || '00').padStart(2, '0');\n  const mm = (parts[1] || '00').padStart(2, '0');\n  const ss = (parts[2] || '00').padStart(2, '0');\n\n  return `${hh}:${mm}:${ss}`;\n}\n\nfunction toIsoWithOffset(dateStr, timeStr) {\n  if (!dateStr || !timeStr) return null;\n\n  const t = padTime(timeStr);\n\n  if (!t) return null;\n\n  return `${dateStr}T${t}${UTC_OFFSET}`;\n}\n\nconst time_min = toIsoWithOffset(selectedDate, startTimeRaw);\nconst time_max = toIsoWithOffset(selectedDate, endTimeRaw);\n\nreturn [\n  {\n    json: {\n      appointment_id,\n      time_min,\n      time_max,\n      selected_date: selectedDate,\n      start_time: startTimeRaw,\n      end_time: endTimeRaw,\n      customer_id: previousData.customer_id,\n      name: previousData.name,\n      company_name: previousData.company_name,\n      email: previousData.email,\n      service_name: previousData.service_name,\n      notes: previousData.notes,\n      missing_time_fields: !time_min || !time_max\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        7984,
+        6032
+      ],
+      "id": "a01b6a88-8d28-4f29-b4f6-aaef71907bd5",
+      "name": "Code in JavaScript11"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={\n  \"message\": \"Please tell me the rescheduled time and date that is suitable for you. This is the nearest available slot: {{ $json.timeMax }} to {{ $json.timeMin }}.\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        8016,
+        6304
+      ],
+      "id": "cc809e84-9d68-42b2-98cc-cbfaffef29df",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "resource": "calendar",
+        "calendar": {
+          "__rl": true,
+          "value": "umairimran54321@gmail.com",
+          "mode": "list",
+          "cachedResultName": "umairimran54321@gmail.com"
+        },
+        "options": {
+          "outputFormat": "raw"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        7728,
+        6256
+      ],
+      "id": "8610ecae-1c47-4b21-92a5-a0a790da96b3",
+      "name": "Get availability in a calendar1",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "M8xlyAVAeE5TMBGM",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={\n  \"message\": \"Your request for rescheduling has been successful for appointment ID {{ $('Code in JavaScript11').item.json.appointment_id }}. Your rescheduled time is {{ $('Code in JavaScript11').item.json.selected_date }} from  {{ $json.start.dateTime }} till {{ $json.end.dateTime }}.\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        8512,
+        6064
+      ],
+      "id": "54a9b822-645f-4342-8a96-da8565ce7cfc",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "sendTo": "ranahamza75311@gmail.com",
+        "subject": "Appointment Rescheduled ",
+        "emailType": "text",
+        "message": "={\n  \"message\": \"Dear Manager, your appointment with Mr/Mrs {{ $('Route Action2').item.json.name }} from company {{ $('Route Action2').item.json.company_name }} for {{ $('Route Action2').item.json.service_name }} on {{ $('Route Action2').item.json.start_time }} to {{ $('Route Action2').item.json.end_time }} at {{ $('Route Action2').item.json.selected_date }} and calendar ID {{ $('Update an event').item.json.id }} has been rescheduled to {{ $('Code in JavaScript11').item.json.start_time }} till {{ $('Code in JavaScript11').item.json.end_time }}. Calendar Link: {{ $('Update an event').item.json.htmlLink }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        9072,
+        6032
+      ],
+      "id": "efcc076f-62ad-40cc-af21-48de4530fbfc",
+      "name": "Send a message1",
+      "webhookId": "4f0e0329-0b60-4bf7-a307-584268edea65",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "BFl45hgQrRgsWosb",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "appointments",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "appointment_code",
+              "condition": "eq",
+              "keyValue": "={{ $('Code in JavaScript11').item.json.appointment_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "date",
+              "fieldValue": "={{ $('Code in JavaScript11').item.json.selected_date }}"
+            },
+            {
+              "fieldId": "start_time",
+              "fieldValue": "={{ $('Code in JavaScript11').item.json.start_time }}"
+            },
+            {
+              "fieldId": "end_time",
+              "fieldValue": "={{ $('Code in JavaScript11').item.json.end_time }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        8800,
+        6080
+      ],
+      "id": "2be70baf-8861-427a-a34c-8c367d3b756f",
+      "name": "Update a row",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "BK3lrdMFNvplh41P",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=# AI AUTOMATION AGENCY BACKEND AI AGENT\n\nYou are the backend AI agent for an AI Automation Agency.\n\nYour workflow is:\n\n**ElevenLabs → Webhook → AI Agent → Code Node → Backend Workflow**\n\nYou receive the raw ElevenLabs message directly from:\n\n```text\n{{ $json.body.Message }}\n```\n\nYour job is to:\n\n1. Read and parse the raw ElevenLabs message.\n2. Identify the requested action.\n3. Check the connected Supabase Knowledge Source.\n4. Retrieve real information from Supabase.\n5. Perform the required operation.\n6. For quotations, retrieve the correct automation requirements and pricing from Supabase, calculate the quotation, generate a unique quote ID, and create the complete quotation.\n7. Return all important information as a flat JSON object.\n8. Return every value as a string.\n\nNever invent information.\n\n---\n\n# 1. READ THE RAW ELEVENLABS MESSAGE\n\nThe ElevenLabs webhook sends the request inside:\n\n```text\n{{ $json.body.Message }}\n```\n\nThe `Message` value may be a JSON string.\n\nParse the JSON before processing.\n\nExample:\n\n```json\n{\n  \"action\": \"calculate_quote\",\n  \"customer_id\": \"CUST-749811\",\n  \"name\": \"Ali\",\n  \"company_name\": \"Knight Well Logistics\",\n  \"email\": \"ali323@gmail.com\",\n  \"phone\": \"+1 969-695\",\n  \"industry\": \"Logistics\",\n  \"company_size\": \"5 to 10 employees\",\n  \"website\": \"www.nightwelllogistics.com\",\n  \"location\": \"Dallas, Texas\",\n  \"existing_tools\": \"HubSpot, website, WhatsApp, email\",\n  \"budget_range\": \"$5,000\",\n  \"service_name\": \"AI Agent\",\n  \"department\": \"Sales\",\n  \"quantity\": \"1\",\n  \"issue\": \"Manual lead entry, manual assignment, manual follow-up emails\",\n  \"desired_automation\": \"AI agent for lead management and customer inquiries\",\n  \"expected_outcome\": \"Automated lead processing and customer support\",\n  \"selected_components\": \"Lead automation, AI chatbot, CRM integration, Email automation\"\n}\n```\n\nDo not depend on a Code Node before this AI Agent.\n\n---\n\n# 2. SUPABASE KNOWLEDGE SOURCE\n\nSupabase is the source of truth.\n\nThe Knowledge Source may contain:\n\n* Customers\n* Services\n* Automation requirements\n* Quotation requirements\n* Pricing\n* Components\n* Business information\n* Policies\n* Appointments\n* Availability\n\nAlways check Supabase before guessing.\n\nNever invent:\n\n* Customer information\n* Services\n* Automation requirements\n* Components\n* Prices\n* VAT/tax\n* Quote IDs from existing records\n* Appointment information\n* Availability\n* Technician information\n\nUse actual information stored in Supabase.\n\n---\n\n# 3. CUSTOMER LOOKUP\n\nFor:\n\n```text\naction = get_customer\n```\n\nSearch the Supabase Knowledge Source.\n\nUse the strongest available identifier in this order:\n\n1. customer_id\n2. company_name\n3. email\n4. phone\n\nIf the customer exists, return all available customer information.\n\nCustomer fields:\n\n```text\ncustomer_id\nname\ncompany_name\nemail\nphone\nindustry\ncompany_size\nwebsite\nlocation\nexisting_tools\nbudget_range\nstatus\ncreated_at\nlast_contact\n```\n\nIf a field is unavailable, return:\n\n```text\n\"\"\n```\n\nNever invent missing information.\n\n---\n\n# 4. CREATE CUSTOMER\n\nFor:\n\n```text\naction = create_customer\n```\n\nFirst check Supabase to make sure the customer does not already exist.\n\nRequired customer information:\n\n```text\nname\ncompany_name\nemail\nphone\nindustry\ncompany_size\nwebsite\nlocation\nexisting_tools\nbudget_range\n```\n\nDo not invent missing customer information.\n\nThe backend/code workflow may generate the customer ID.\n\nOnly report successful creation when the database actually confirms creation.\n\nIf creation fails:\n\n```text\nsuccess = \"false\"\n```\n\nand explain the actual error.\n\n---\n\n# 5. BUSINESS INFORMATION\n\nFor:\n\n```text\naction = get_business_info\n```\n\nSearch Supabase.\n\nReturn the actual business information.\n\nNever invent business information.\n\n---\n\n# 6. SERVICES\n\nFor:\n\n```text\naction = get_services\n```\n\nSearch Supabase.\n\nReturn the actual available services.\n\nNever invent services.\n\n---\n\n# 7. AUTOMATION REQUIREMENTS\n\nFor:\n\n```text\naction = get_automation_requirements\n```\n\nUse the customer's information:\n\n```text\ndesired_automation\nservice_name\ndepartment\nissue\nexpected_outcome\n```\n\nSearch Supabase for the matching automation requirements.\n\nReturn the actual requirements found.\n\nDo not invent requirements.\n\n---\n\n# 8. CALCULATE QUOTE\n\nFor:\n\n```text\naction = calculate_quote\n```\n\nyou must follow the complete quotation process below.\n\n## STEP 1 — READ CUSTOMER REQUEST\n\nRead:\n\n```text\ncustomer_id\nname\ncompany_name\nemail\nphone\nindustry\ncompany_size\nwebsite\nlocation\nexisting_tools\nbudget_range\nservice_name\ndepartment\nquantity\nissue\ndesired_automation\nexpected_outcome\n```\n\nThe customer's budget is informational only.\n\nDo NOT use the customer's budget as the quotation price.\n\n---\n\n## STEP 2 — RETRIEVE QUOTATION REQUIREMENTS\n\nSearch the connected Supabase Knowledge Source for the quotation/automation requirements that match the customer's request.\n\nUse:\n\n```text\ndesired_automation\nservice_name\ndepartment\nissue\nexpected_outcome\nexisting_tools\n```\n\nas the matching information.\n\nFor example, if the customer says:\n\n```text\nService: AI Agent\n\nDepartment: Sales\n\nDesired Automation:\nAI agent for lead management and customer inquiries\n\nIssue:\nManual lead entry, manual assignment, manual follow-up emails\n\nExpected Outcome:\nAutomated lead processing and customer support\n```\n\nsearch Supabase for the requirements that correspond to this automation.\n\nDo not simply rely on the `selected_components` supplied by ElevenLabs if Supabase contains more accurate requirements.\n\nSupabase is the source of truth.\n\n---\n\n## STEP 3 — IDENTIFY THE REQUIRED COMPONENTS\n\nFrom the retrieved Supabase quotation/automation requirements, determine the exact components required for the customer's requested automation.\n\nExample:\n\n```text\nLead Automation\nAI Chatbot\nCRM Integration\nEmail Automation\n```\n\nOnly use components that are actually found in the Supabase requirements.\n\nNever invent components.\n\nReturn the components as ONE STRING:\n\n```text\n\"Lead Automation, AI Chatbot, CRM Integration, Email Automation\"\n```\n\n---\n\n## STEP 4 — RETRIEVE ACTUAL PRICING\n\nFor every selected component, retrieve its actual price from Supabase.\n\nUse the pricing stored in Supabase.\n\nNever:\n\n* Guess a price\n* Estimate a price\n* Use the customer's budget as the price\n* Create your own pricing\n* Change a stored price\n\nThe customer's:\n\n```text\nbudget_range\n```\n\nmust NOT determine the quotation amount.\n\n---\n\n## STEP 5 — APPLY QUANTITY\n\nUse the quantity supplied by ElevenLabs.\n\nIf:\n\n```text\nquantity = \"1\"\n```\n\ncalculate the component price for one unit.\n\nIf quantity is missing, use:\n\n```text\n\"1\"\n```\n\nunless Supabase contains a different pricing rule.\n\n---\n\n## STEP 6 — CALCULATE SUBTOTAL\n\nCalculate:\n\n```text\nSubtotal = sum of all selected component prices × applicable quantity\n```\n\nUse the actual prices retrieved from Supabase.\n\nReturn the subtotal as a string.\n\nExample:\n\n```text\n\"subtotal\": \"4000\"\n```\n\n---\n\n## STEP 7 — CALCULATE VAT/TAX\n\nCheck Supabase for the applicable VAT/tax rule.\n\nIf Supabase provides a VAT/tax percentage, apply it.\n\nIf Supabase does not contain a VAT/tax rule, do not invent one.\n\nIf no VAT/tax applies or no rule exists, return:\n\n```text\n\"vat\": \"\"\n```\n\nDo not guess a tax percentage.\n\n---\n\n## STEP 8 — CALCULATE TOTAL\n\nCalculate:\n\n```text\nTotal = Subtotal + applicable VAT/Tax\n```\n\nReturn the final total as a string.\n\nExample:\n\n```text\n\"total\": \"4600\"\n```\n\nNever invent the total.\n\n---\n\n# 9. GENERATE QUOTE ID\n\nAfter the quotation has been successfully calculated, generate a unique quote ID yourself.\n\nUse this exact format:\n\n```text\nQTE-XXXXXX\n```\n\nwhere `XXXXXX` is a unique six-digit number.\n\nExample:\n\n```text\nQTE-583421\n```\n\nThe generated quote ID must be returned in:\n\n```text\nquote_id\n```\n\nand must also appear inside the customer-facing quotation.\n\nDo NOT leave `quote_id` empty when the quotation calculation succeeds.\n\nDo NOT use the customer ID as the quote ID.\n\nDo NOT copy the customer ID into the quote ID.\n\nDo NOT generate a quote ID if the quotation calculation fails.\n\n---\n\n# 10. GENERATE THE COMPLETE QUOTATION\n\nAfter successfully retrieving the requirements, pricing, subtotal, VAT/tax, and total, generate a readable quotation.\n\nPut the complete quotation inside the:\n\n```text\nmessage\n```\n\nfield.\n\nUse this format:\n\n```text\nQUOTATION\n\nQuote ID: QTE-583421\n\nCustomer: Ali\nCompany: Knight Well Logistics\n\nService: AI Agent\nDepartment: Sales\n\nAutomation Requirements:\n- Lead Automation\n- AI Chatbot\n- CRM Integration\n- Email Automation\n\nPricing:\n- Lead Automation: [actual Supabase price]\n- AI Chatbot: [actual Supabase price]\n- CRM Integration: [actual Supabase price]\n- Email Automation: [actual Supabase price]\n\nSubtotal: [actual calculated subtotal]\nVAT/Tax: [actual calculated VAT/tax]\n\nTOTAL: [actual calculated total]\n\nExpected Outcome:\nAutomated lead processing and customer support\n```\n\nReplace all values with actual information.\n\nNever put invented prices in the quotation.\n\nThe `message` must contain the actual calculated quotation, not just:\n\n```text\n\"Quote calculated successfully.\"\n```\n\n---\n\n# 11. QUOTE SUCCESS CONDITION\n\nA quotation is successful when:\n\n1. Matching automation requirements were found.\n2. Required components were identified.\n3. Actual component prices were retrieved.\n4. The subtotal was calculated.\n5. Applicable VAT/tax was calculated.\n6. The total was calculated.\n7. A unique quote ID was generated.\n8. The complete quotation was written into `message`.\n\nThen return:\n\n```text\n\"success\": \"true\"\n```\n\nDo NOT report quotation failure simply because there is no database quote record.\n\nThe AI Agent itself generates the quote ID.\n\n---\n\n# 12. QUOTE FAILURE\n\nIf the quotation cannot be calculated because required pricing or requirements are unavailable, return:\n\n```text\n\"success\": \"false\"\n```\n\nand:\n\n```text\n\"quote_id\": \"\"\n```\n\nExplain the actual reason in:\n\n```text\n\"error\"\n```\n\nDo not invent a price just to complete the quotation.\n\nDo not generate a quote ID for a failed quotation.\n\n---\n\n# 13. BOOK APPOINTMENT\n\nFor:\n\n```text\naction = book_appointment\n```\n\ncheck the actual availability from the connected database/Knowledge Source.\n\nUse:\n\n```text\ncustomer_id\nname\ncompany_name\nemail\nphone\nlocation\nservice_name\nselected_date\nselected_time\nstart_time\nend_time\n```\n\nNever:\n\n* Book a past date\n* Book an unavailable slot\n* Create a conflicting appointment\n* Invent appointment IDs\n* Invent availability IDs\n* Invent technician IDs\n* Invent technician names\n\nOnly report success when the appointment is actually confirmed.\n\n---\n\n# 14. RESCHEDULE APPOINTMENT\n\nFor:\n\n```text\naction = reschedule_appointment\n```\n\nUse:\n\n```text\ncustomer_id\nappointment_id\nselected_date\nselected_time\nstart_time\nend_time\n```\n\nFirst find the existing appointment.\n\nThen check the requested new availability.\n\nOnly reschedule if the new slot is actually available.\n\nReturn the actual updated appointment information.\n\n---\n\n# 15. SUPPORTED ACTIONS\n\nOnly use:\n\n```text\nget_customer\ncreate_customer\nget_business_info\nget_services\nget_automation_requirements\ncalculate_quote\nbook_appointment\nreschedule_appointment\n```\n\nThere is NO:\n\n```text\ncancel_appointment\n```\n\nNever create or use a cancellation action.\n\n---\n\n# 16. COMPLETE OUTPUT FORMAT\n\nAlways return ALL of these fields at the TOP LEVEL.\n\nDo not put important information only inside `data`.\n\n```json\n{\n  \"success\": \"\",\n  \"action\": \"\",\n  \"message\": \"\",\n\n  \"customer_id\": \"\",\n  \"name\": \"\",\n  \"company_name\": \"\",\n  \"email\": \"\",\n  \"phone\": \"\",\n  \"industry\": \"\",\n  \"company_size\": \"\",\n  \"website\": \"\",\n  \"location\": \"\",\n  \"existing_tools\": \"\",\n  \"budget_range\": \"\",\n  \"status\": \"\",\n  \"created_at\": \"\",\n  \"last_contact\": \"\",\n\n  \"service_name\": \"\",\n  \"department\": \"\",\n  \"quantity\": \"\",\n  \"request_location\": \"\",\n  \"urgency\": \"\",\n  \"issue\": \"\",\n  \"notes\": \"\",\n  \"desired_automation\": \"\",\n  \"expected_outcome\": \"\",\n\n  \"appointment_id\": \"\",\n  \"selected_date\": \"\",\n  \"selected_time\": \"\",\n  \"start_time\": \"\",\n  \"end_time\": \"\",\n  \"availability_id\": \"\",\n  \"technician_id\": \"\",\n  \"technician_name\": \"\",\n\n  \"selected_components\": \"\",\n\n  \"quote_id\": \"\",\n  \"subtotal\": \"\",\n  \"vat\": \"\",\n  \"total\": \"\",\n\n  \"policy_type\": \"\",\n  \"error\": \"\"\n}\n```\n\n---\n\n# 17. EVERY VALUE MUST BE A STRING\n\nEvery field must be a string.\n\nCorrect:\n\n```json\n{\n  \"success\": \"true\",\n  \"quantity\": \"1\",\n  \"subtotal\": \"4000\",\n  \"vat\": \"600\",\n  \"total\": \"4600\",\n  \"quote_id\": \"QTE-583421\"\n}\n```\n\nIncorrect:\n\n```json\n{\n  \"success\": true,\n  \"quantity\": 1,\n  \"subtotal\": 4000,\n  \"vat\": 600,\n  \"total\": 4600\n}\n```\n\nNever return:\n\n```text\nnull\n```\n\nNever omit a required field.\n\nIf a value does not apply or is unavailable, return:\n\n```text\n\"\"\n```\n\n---\n\n# 18. SELECTED COMPONENTS MUST BE A STRING\n\nCorrect:\n\n```json\n{\n  \"selected_components\": \"Lead Automation, AI Chatbot, CRM Integration, Email Automation\"\n}\n```\n\nIncorrect:\n\n```json\n{\n  \"selected_components\": [\n    \"Lead Automation\",\n    \"AI Chatbot\",\n    \"CRM Integration\",\n    \"Email Automation\"\n  ]\n}\n```\n\n---\n\n# 19. SUCCESSFUL QUOTE EXAMPLE\n\nFor the customer's request:\n\n```text\nCustomer: Ali\nCompany: Knight Well Logistics\nService: AI Agent\nDepartment: Sales\n\nDesired Automation:\nAI agent for lead management and customer inquiries\n\nIssue:\nManual lead entry, manual assignment, manual follow-up emails\n\nExpected Outcome:\nAutomated lead processing and customer support\n```\n\nThe agent must:\n\n```text\n1. Search Supabase.\n2. Retrieve the matching automation/quotation requirements.\n3. Identify the required components.\n4. Retrieve the actual prices for those components.\n5. Apply quantity.\n6. Calculate subtotal.\n7. Check Supabase for VAT/tax.\n8. Calculate total.\n9. Generate a unique QTE-XXXXXX quote ID.\n10. Write the complete quotation.\n11. Return the quotation and calculated values.\n```\n\nThe final response should contain:\n\n```json\n{\n  \"success\": \"true\",\n  \"action\": \"calculate_quote\",\n  \"message\": \"QUOTATION\\n\\nQuote ID: QTE-583421\\n\\nCustomer: Ali\\nCompany: Knight Well Logistics\\n\\nService: AI Agent\\nDepartment: Sales\\n\\nAutomation Requirements:\\n- Lead Automation\\n- AI Chatbot\\n- CRM Integration\\n- Email Automation\\n\\nPricing:\\n- Lead Automation: [actual price]\\n- AI Chatbot: [actual price]\\n- CRM Integration: [actual price]\\n- Email Automation: [actual price]\\n\\nSubtotal: [actual subtotal]\\nVAT/Tax: [actual VAT]\\nTOTAL: [actual total]\\n\\nExpected Outcome: Automated lead processing and customer support\",\n\n  \"customer_id\": \"CUST-749811\",\n  \"name\": \"Ali\",\n  \"company_name\": \"Knight Well Logistics\",\n  \"email\": \"ali323@gmail.com\",\n  \"phone\": \"+1 969-695\",\n  \"industry\": \"Logistics\",\n  \"company_size\": \"5 to 10 employees\",\n  \"website\": \"www.nightwelllogistics.com\",\n  \"location\": \"Dallas, Texas\",\n  \"existing_tools\": \"HubSpot, website, WhatsApp, email\",\n  \"budget_range\": \"$5,000\",\n\n  \"status\": \"\",\n  \"created_at\": \"\",\n  \"last_contact\": \"\",\n\n  \"service_name\": \"AI Agent\",\n  \"department\": \"Sales\",\n  \"quantity\": \"1\",\n  \"request_location\": \"\",\n  \"urgency\": \"\",\n  \"issue\": \"Manual lead entry, manual assignment, manual follow-up emails\",\n  \"notes\": \"\",\n  \"desired_automation\": \"AI agent for lead management and customer inquiries\",\n  \"expected_outcome\": \"Automated lead processing and customer support\",\n\n  \"appointment_id\": \"\",\n  \"selected_date\": \"\",\n  \"selected_time\": \"\",\n  \"start_time\": \"\",\n  \"end_time\": \"\",\n  \"availability_id\": \"\",\n  \"technician_id\": \"\",\n  \"technician_name\": \"\",\n\n  \"selected_components\": \"Lead Automation, AI Chatbot, CRM Integration, Email Automation\",\n\n  \"quote_id\": \"QTE-583421\",\n  \"subtotal\": \"[actual subtotal]\",\n  \"vat\": \"[actual VAT]\",\n  \"total\": \"[actual total]\",\n\n  \"policy_type\": \"\",\n  \"error\": \"\"\n}\n```\n\nThe bracketed pricing values above are examples only. Replace them with the actual values retrieved from Supabase.\n\n---\n\n# 20. NEVER INVENT DATA\n\nNever invent:\n\n* Customer IDs\n* Appointment IDs\n* Availability IDs\n* Technician IDs\n* Technician names\n* Services\n* Automation requirements\n* Components\n* Prices\n* VAT/tax\n* Totals\n* Existing customer information\n\nThe only exception is:\n\n**For a successful `calculate_quote` action, you MUST generate a new unique `quote_id` yourself using the `QTE-XXXXXX` format.**\n\n---\n\n# 21. FINAL PROCESS\n\nFor every request:\n\n**RAW ELEVENLABS MESSAGE**\n\n↓\n\n**PARSE MESSAGE**\n\n↓\n\n**IDENTIFY ACTION**\n\n↓\n\n**CHECK SUPABASE**\n\n↓\n\n**RETRIEVE ACTUAL INFORMATION**\n\n↓\n\n**PERFORM REQUIRED OPERATION**\n\n↓\n\n**FOR CALCULATE_QUOTE:**\n\n**Retrieve automation requirements**\n\n↓\n\n**Identify required components**\n\n↓\n\n**Retrieve actual prices**\n\n↓\n\n**Calculate subtotal**\n\n↓\n\n**Apply applicable VAT/tax**\n\n↓\n\n**Calculate total**\n\n↓\n\n**Generate unique QTE-XXXXXX**\n\n↓\n\n**Generate complete quotation**\n\n↓\n\n**Return quotation + quote ID + subtotal + VAT + total**\n\n↓\n\n**Code Node converts/normalizes all values to strings**\n\nAlways return the complete top-level JSON structure.\n\nNever guess.\nNever invent pricing.\nNever use the customer's budget as the quote price.\nNever leave a successful quote without a generated quote ID.\n\n",
+        "options": {
+          "maxIterations": 50
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        4400,
+        6672
+      ],
+      "id": "ddff823c-e793-4163-be13-f3da35973a72",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        4288,
+        6912
+      ],
+      "id": "03d7856a-d6e5-4cd7-8bf1-9112359f5d12",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "Pricing_components"
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        4656,
+        7072
+      ],
+      "id": "3fa93ffe-2244-4d24-ae4e-14e50991d6b7",
+      "name": "Get many rows in Supabase",
+      "credentials": {
+        "supabaseApi": {
+          "id": "BK3lrdMFNvplh41P",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "knowledge_base_1"
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        4560,
+        6960
+      ],
+      "id": "2ae472b2-d33b-48b2-bb9d-6bade51023c4",
+      "name": "Create a row in Supabase",
+      "credentials": {
+        "supabaseApi": {
+          "id": "BK3lrdMFNvplh41P",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "Customers"
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        4416,
+        7024
+      ],
+      "id": "6c0e8229-e0af-489a-9bf0-d2af50a35c47",
+      "name": "Get many rows in Supabase4",
+      "credentials": {
+        "supabaseApi": {
+          "id": "BK3lrdMFNvplh41P",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        6336,
+        6576
+      ],
+      "id": "22468bbb-2c2a-4a36-ba45-db0dffc92990",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "278d2142-e2a6-4be7-8f00-fc6b74c60f51",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "get_services",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "get_services"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "create_customer",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "c89c898f-f1e2-4b9d-8c3f-da09eb2aaa73"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "create_customer"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        5072,
+        6800
+      ],
+      "id": "501b2442-e322-40e4-9891-6384142b1827",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "Services"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        5328,
+        6912
+      ],
+      "id": "13ca5784-be5c-4c1b-b63e-5eea85b67975",
+      "name": "Get many rows1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "BK3lrdMFNvplh41P",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        5552,
+        6912
+      ],
+      "id": "cbc298d7-07f7-4428-a7c5-d931b32d9199",
+      "name": "Respond to Webhook3"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "28ee9d1b-5f4a-46fd-ac9e-9f6856cccaf0",
+              "leftValue": "={{ $('Switch').item.json.action }}",
+              "rightValue": "create_customer",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        6560,
+        6592
+      ],
+      "id": "78a955bf-1ff2-440e-90ae-e2c950f561d0",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={\n  \"message\": \"Customer has been created successfully with customer ID {{ $json.id }}, name {{ $json.name }}, and company name {{ $json.company_name }}.\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        6816,
+        6864
+      ],
+      "id": "54995c16-9cb3-4c80-a185-e4da69c9748a",
+      "name": "Respond to Webhook4"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        9888,
+        6960
+      ],
+      "id": "8b4a40f2-be89-4df1-9a76-82786d44b3de",
+      "name": "Merge1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook2": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript6": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Route Action2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If4": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create a row2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a row2": {
+      "main": [
+        [
+          {
+            "node": "If4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a row2": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Action2": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create a document2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript10",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript7": {
+      "main": [
+        [
+          {
+            "node": "Route Action2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook7": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Create a document2": {
+      "main": [
+        [
+          {
+            "node": "Update a document2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a document2": {
+      "main": [
+        [
+          {
+            "node": "Export Document as PDF1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Export Document as PDF1": {
+      "main": [
+        [
+          {
+            "node": "Attach PDF to Gmail Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attach PDF to Gmail Draft": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook9": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript9": {
+      "main": [
+        [
+          {
+            "node": "Create a row3",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a row3": {
+      "main": [
+        [
+          {
+            "node": "Create a row4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a row4": {
+      "main": [
+        []
+      ]
+    },
+    "Code in JavaScript10": {
+      "main": [
+        [
+          {
+            "node": "Get availability in a calendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get availability in a calendar": {
+      "main": [
+        [
+          {
+            "node": "Is Slot Available?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Slot Available?": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Slot Unavailable Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Booking Confirmed Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook - Booking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Slot Unavailable Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create an event": {
+      "main": [
+        [
+          {
+            "node": "Format Booking Confirmed Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Create an event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook - Booking": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Get many rows",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get availability in a calendar1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many rows": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript11",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript11": {
+      "main": [
+        [
+          {
+            "node": "Update an event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get availability in a calendar1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update an event": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook2": {
+      "main": [
+        [
+          {
+            "node": "Update a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message1": {
+      "main": [
+        []
+      ]
+    },
+    "Update a row": {
+      "main": [
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many rows in Supabase": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a row in Supabase": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many rows in Supabase4": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Get many rows1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get a row2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many rows1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript7",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "5bf9b7a9-2ef4-4b11-98e7-66f3be109308",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ee2cd1272a9f39a585decb60dab8b2e7e1af8097b20b1b80213227238f906c68"
+  },
+  "nodeGroups": [],
+  "id": "RDRWsLGEWSaIoDHD",
+  "tags": []
+}
